@@ -92,8 +92,8 @@ class BikeMiApi:
             stationEdit = re.sub('[^A-Za-z0-9]+', '', 
             unidecode.unidecode(station['name']))
 
-            if re.search(userInputEdit, stationEdit, re.IGNORECASE) or re.search(userInput, 
-            station['station_id'], re.IGNORECASE):
+            if userInputEdit != ("") and (re.search(userInputEdit, stationEdit,
+            re.IGNORECASE) or re.search(userInput, station['station_id'], re.IGNORECASE)):
                 yield station
 
     # Sort all the stations by chosen key

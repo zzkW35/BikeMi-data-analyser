@@ -1,4 +1,4 @@
-from num2words import num2words
+#from num2words import num2words
 # TODO: Convert numerical input into words in
 # a proper manner, excluding the station number
 import bikemi
@@ -24,10 +24,10 @@ def findStationPrinter(stations):
         stationEdit = re.sub('[^A-Za-z0-9]+', '', 
         unidecode.unidecode(station['name']))
 
-        if re.search(userInputEdit, stationEdit, re.IGNORECASE) or re.search(userInput, 
-        station['station_id'], re.IGNORECASE):
+        if userInputEdit != ("") and (re.search(userInputEdit, stationEdit,
+        re.IGNORECASE) or re.search(userInput, station['station_id'], re.IGNORECASE)):
             print("")
-            print("Name:", station['name'])
+            print("Name:", userInputEdit)
             print("ID:", station['station_id'])
             print("Address:", station['address'])
             print("Capacity:", station['capacity'])
