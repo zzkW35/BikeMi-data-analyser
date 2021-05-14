@@ -27,7 +27,7 @@ def findStationPrinter(stations):
         if userInputEdit != ("") and (re.search(userInputEdit, stationEdit,
         re.IGNORECASE) or re.search(userInput, station['station_id'], re.IGNORECASE)):
             print("")
-            print("Name:", userInputEdit)
+            print("Name:", station['name'])
             print("ID:", station['station_id'])
             print("Address:", station['address'])
             print("Capacity:", station['capacity'])
@@ -53,4 +53,9 @@ stationsBasicInfo = api.jsonDecoder(STATION_INFO)
 stationsExtraInfo = api.getStationsExtraInfo()
 stationsFullInfo = api.getStationsFullInfo(stationsBasicInfo, stationsExtraInfo)
 
-findStationPrinter(stationsFullInfo)
+print(api.getNearestStation(stationsFullInfo, 45.46472, 9.18577))
+
+#findStationPrinter(stationsFullInfo)
+
+#for station in api.findStation(stationsFullInfo, "cinque"):
+#    distance(station, 45.464100, 9.191926)

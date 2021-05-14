@@ -1,3 +1,4 @@
+from math import cos, asin, sqrt, pi
 from operator import itemgetter
 
 import json
@@ -7,7 +8,7 @@ import unidecode
 
 class BikeMiApi:
 
-    # Generate a list of stations, stored as dictionaries, starting from the 
+    # Generate a list of stations, stored as dictionaries, starting from the
     # json files provided by BikeMi at https://bikemi.com/dati-aperti/ 
     def jsonDecoder(self, InfoUrl):
         resp = requests.get(InfoUrl)
@@ -56,8 +57,8 @@ class BikeMiApi:
             info = [i.replace('"', '').replace('}', '')
             .replace(']', '') for i in info]
 
-            # Parse the data in a dictionary where "titles" are the keys and "info"
-            # are the values
+            # Parse the data in a dictionary where "titles" are the keys 
+            # and "info" are the values
             stationDict = dict(zip(titles, info))
             
             # Add the newly created dictionary inside a list
@@ -66,8 +67,8 @@ class BikeMiApi:
         # Return a list containing all the stations, stored as dictionaries
         return(stationExtraInfoList)
 
-    # Merge basic info gathered from the Open Data (json) with the extra info
-    # scraped from the website
+    # Merge basic info gathered from the Open Data (json) 
+    # with the extra info scraped from the website
     def getStationsFullInfo(self, stationsBasicInfo, stationsExtraInfo):
         stationsBasicInfoSorted = sorted(stationsBasicInfo, 
         key=itemgetter("station_id"))
@@ -79,8 +80,8 @@ class BikeMiApi:
         stationsBasicInfoSorted)]
         return(stationsFullInfo)
 
-    # Search and yield stations by typing their names or their unique IDs, it's
-    # meant to be used with STATION_INFO.
+    # Search and yield stations by typing their names or their unique IDs,
+    # it's meant to be used with STATION_INFO.
     def findStation(self, stations, userInput):
 
         # Remove accents, all the spaces and special chars from the input
@@ -92,10 +93,33 @@ class BikeMiApi:
             stationEdit = re.sub('[^A-Za-z0-9]+', '', 
             unidecode.unidecode(station['name']))
 
-            if userInputEdit != ("") and (re.search(userInputEdit, stationEdit,
-            re.IGNORECASE) or re.search(userInput, station['station_id'], re.IGNORECASE)):
+            if userInputEdit != ("") and (re.search(userInputEdit, 
+            stationEdit, re.IGNORECASE) or re.search(userInput, 
+            station['station_id'], re.IGNORECASE)):
                 yield station
 
     # Sort all the stations by chosen key
     def sort(self, stations, key):
         return sorted(stations, key=itemgetter(key))
+    
+    # Get the nearest station given latitude and longitude
+    def getNearestStation(self, stationsFullInfo, lat, lon):
+        distances = []
+        for station in stationsFullInfo:
+            lat2 = station['lat']
+            lon2 = station['lon']
+
+            # Haversine formula
+            p = pi/180
+            a = (0.5 - cos((lat2-lat)*p)/2 + cos(lat*p) 
+            * cos(lat2*p) * (1-cos((lon2-lon)*p))/2)
+            distance =( 12742 * asin(sqrt(a))) #2*R*asin... km
+
+            distances.append(distance)
+
+        smallest = min(distances) # Get smallest distance
+        # Get index of the specified element in the list
+        # Note: index of the smallest distance = index of 
+        # said station in "stationsFullInfo" list
+        index = distances.index(smallest) 
+        return stationsFullInfo[index]
