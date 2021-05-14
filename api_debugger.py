@@ -1,3 +1,6 @@
+from num2words import num2words
+# TODO: Convert numerical input into words in
+# a proper manner, excluding the station number
 import bikemi
 import re
 import unidecode
@@ -35,7 +38,7 @@ def findStationPrinter(stations):
             print("Available docks:", station['availableDocks'])
             print("")                
             askFullData = input("Do you want to have full data displayed? ")
-            if askFullData.lower() == "yes":
+            if askFullData.lower() == "yes" or askFullData.lower() == "y":
                 print(station)
 
 # This class is meant to be used with STATUS_INFO
