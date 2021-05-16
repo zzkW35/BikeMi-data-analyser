@@ -3,6 +3,7 @@ import re
 import requests
 import unidecode
 
+from geopy import distance
 from math import cos, asin, sqrt, pi
 from operator import itemgetter
 
@@ -140,19 +141,9 @@ class BikeMiApi:
     def get_nearest_station(self, stations_full_info, lat, lon):
         distances = []
         for station in stations_full_info:
-            lat2 = station["lat"]
-            lon2 = station["lon"]
-
-            # Haversine formula
-            p = pi / 180
-            a = (
-                0.5
-                - cos((lat2 - lat) * p) / 2
-                + cos(lat * p) * cos(lat2 * p) * (1 - cos((lon2 - lon) * p)) / 2
-            )
-            distance = 12742 * asin(sqrt(a))  # 2*R*asin... km
-
-            distances.append(distance)
+            coord_input = (lat, lon)
+            coord_stations = (station["lat"], station["lon"])
+            distances.append(distance.distance(coord_input, coord_stations).kilometers)
 
         smallest = min(distances)  # Get smallest distance
         # Get index of the specified element in the list
