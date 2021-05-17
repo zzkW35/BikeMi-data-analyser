@@ -95,7 +95,8 @@ class BikeMiApi:
             # and "info" are the values
             station_dict = dict(zip(titles, info))
             # Add the newly created dictionary inside a list
-            station_extra_info_list.append(station_dict)
+            if bool(station_dict) == True:
+                station_extra_info_list.append(station_dict)
 
         # Return a list containing all the stations, stored as dictionaries
         return station_extra_info_list
