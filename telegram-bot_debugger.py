@@ -38,7 +38,7 @@ def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None):
 
 # Function to setup the Keyboard Button menu
 def custom_keyboard():
-    search_keyboard = KeyboardButton(text=emojis.encode(":mag_right: Search station"))
+    search_keyboard = KeyboardButton(text=emojis.encode(":mag_right: Search Station"))
     nearest_keyboard = KeyboardButton(text="Nearest Station")
     location_keyboard = KeyboardButton(
         text=emojis.encode(":round_pushpin: Send current location"),
@@ -198,7 +198,7 @@ def main():
         "search",
         "Search",
         "/search",
-        emojis.encode(":mag_right: Search station"),
+        emojis.encode(":mag_right: Search Station"),
     ]
     nearest_list = ["nearest", "Nearest", "/nearest", "Nearest Station"]
     location_list = [
@@ -207,7 +207,8 @@ def main():
         "/location",
         emojis.encode(":round_pushpin: Send current location"),
     ]
-    command_list = search_list + nearest_list + location_list
+    easteregg_list = ["Deez", "deez"]
+    command_list = search_list + nearest_list + location_list + easteregg_list
 
     # Register handlers
     dispatcher = updater.dispatcher
@@ -216,7 +217,6 @@ def main():
     start_handler = CommandHandler("start", start)
     dispatcher.add_handler(start_handler)
 
-    # Search Station handler
     def browser(update, context):
         # Search Station
         for element in search_list:
@@ -249,7 +249,13 @@ def main():
                 # Get Location handler
                 get_location_handler = MessageHandler(Filters.location, get_location)
                 dispatcher.add_handler(get_location_handler)
+        
+        # Easter Egg
+        for element in easteregg_list:
+            if update.message.text == element:
+                update.message.reply_text(text="NUUUUUUUUUUUUUUUUUUUUUUUUTZ")
 
+    # Bowser handler
     for element in command_list:
         browser_handler = MessageHandler(Filters.regex(element), browser)
         dispatcher.add_handler(browser_handler)
