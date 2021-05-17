@@ -29,7 +29,7 @@ def find_stationPrinter(stations):
             re.search(user_inputEdit, stationEdit, re.IGNORECASE)
             or re.search(user_input, station["station_id"], re.IGNORECASE)
         ):
-            locationLink = (
+            location_link = (
                 "https://www.google.com/maps/search/?api=1&query="
                 + str(station["lat"])
                 + ","
@@ -44,7 +44,7 @@ def find_stationPrinter(stations):
             print("Electric Bikes:", station["ebike"])
             print("Electric Bikes with childseat:", station["ebike_with_childseat"])
             print("Available docks:", station["availableDocks"])
-            print(locationLink)
+            print(location_link)
             print("")
             askFullData = input("Do you want to have full data displayed? ")
             if askFullData.lower() == "yes" or askFullData.lower() == "y":
@@ -65,4 +65,4 @@ stations_full_info = api.get_stations_full_info(
     get_stations_basic_info, get_stations_extraInfo
 )
 
-print(find_stationPrinter(stations_full_info))
+# print(find_stationPrinter(stations_full_info))
