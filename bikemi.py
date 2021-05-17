@@ -12,8 +12,8 @@ class BikeMiApi:
 
     # Generate a list of stations, stored as dictionaries, starting from the
     # json files provided by BikeMi at https://bikemi.com/dati-aperti/
-    def json_decoder(self, InfoUrl):
-        resp = requests.get(InfoUrl)
+    def json_decoder(self, info_url):
+        resp = requests.get(info_url)
         raw = resp.json()
         # Pick the "stations" values inside the "data" key of the "raw" dict
         stations = raw["data"]["stations"]
@@ -21,25 +21,25 @@ class BikeMiApi:
         return stations
 
     # Get further info (bike availability) by scraping the website source
-    def get_stations_extraInfo(self):
+    def get_stations_extra_info(self):
         raw = requests.get("https://bikemi.com/stazioni").text
         placeholder = '"stationMapPage","slug":null},'
         start = raw.find(placeholder) + len(placeholder)
         end = raw.find('"baseUrl":"https://bikemi.com"')
-        stationExtraInfoRaw = raw[start:end].split("DockGroup:")
+        station_extra_info_raw = raw[start:end].split("DockGroup:")
         # Each station is a string inside the list called "stationExtraInfo"
-        stationExtraInfoList = []
-        stationList = []
-        del stationExtraInfoRaw[0]
+        station_extra_info_list = []
+        station_list = []
+        del station_extra_info_raw[0]
         # Split the raw code into small chunks of data
-        for station in stationExtraInfoRaw:
+        for station in station_extra_info_raw:
             station = station.split(",")
             data = [word for line in station for word in line.split(":")]
 
-            # Create stationList list containing only the relevant data
+            # Create station_list list containing only the relevant data
             # Each station with its data is a list
             if len(data) == 49:
-                stationList.extend(
+                station_list.extend(
                     (
                         data[1],
                         data[2],
@@ -62,7 +62,7 @@ class BikeMiApi:
                     )
                 )
             if len(data) == 50:  # For the stations with extra address info
-                stationList.extend(
+                station_list.extend(
                     (
                         data[1],
                         data[2],
@@ -85,31 +85,31 @@ class BikeMiApi:
                     )
                 )
 
-            titles = stationList[::2]  # Pick only the data placed in odd positions
-            info = stationList[1::2]  # Pick only the data placed in even positions
+            titles = station_list[::2]  # Pick only the data placed in odd positions
+            info = station_list[1::2]  # Pick only the data placed in even positions
 
             # Data cleanup
             titles = [i.replace('"', "").replace("{", "") for i in titles]
             info = [i.replace('"', "").replace("}", "").replace("]", "") for i in info]
             # Parse the data in a dictionary where "titles" are the keys
             # and "info" are the values
-            stationDict = dict(zip(titles, info))
+            station_dict = dict(zip(titles, info))
             # Add the newly created dictionary inside a list
-            stationExtraInfoList.append(stationDict)
+            station_extra_info_list.append(station_dict)
 
         # Return a list containing all the stations, stored as dictionaries
-        return stationExtraInfoList
+        return station_extra_info_list
 
     # Merge basic info gathered from the Open Data (json)
     # with the extra info scraped from the website
     def get_stations_full_info(self, get_stations_basic_info, stations_extra_info):
-        get_stations_basic_infoSorted = sorted(
+        get_stations_basic_info_sorted = sorted(
             get_stations_basic_info, key=itemgetter("station_id")
         )
-        stations_extra_infoSorted = sorted(stations_extra_info, key=itemgetter("id"))
+        stations_extra_info_sorted = sorted(stations_extra_info, key=itemgetter("id"))
         stations_full_info = [
             a | b
-            for (a, b) in zip(stations_extra_infoSorted, get_stations_basic_infoSorted)
+            for (a, b) in zip(stations_extra_info_sorted, get_stations_basic_info_sorted)
         ]
 
         return stations_full_info
@@ -119,7 +119,7 @@ class BikeMiApi:
     def find_station(self, stations, user_input):
 
         # Remove accents, all the spaces and special chars from the input
-        user_inputEdit = re.sub("[^A-Za-z0-9]+", "", unidecode.unidecode(user_input))
+        user_input_edit = re.sub("[^A-Za-z0-9]+", "", unidecode.unidecode(user_input))
 
         for station in stations:
             # Temporarily treat the station names the same as the user_input
@@ -127,8 +127,8 @@ class BikeMiApi:
                 "[^A-Za-z0-9]+", "", unidecode.unidecode(station["name"])
             )
 
-            if user_inputEdit != ("") and (
-                re.search(user_inputEdit, stationEdit, re.IGNORECASE)
+            if user_input_edit != ("") and (
+                re.search(user_input_edit, stationEdit, re.IGNORECASE)
                 or re.search(user_input, station["station_id"], re.IGNORECASE)
             ):
                 yield station

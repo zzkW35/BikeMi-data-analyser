@@ -68,7 +68,7 @@ def start(update, context):
 def pull_stations():
     api = bikemi.BikeMiApi()
     get_stations_basic_info = api.json_decoder(STATION_INFO)
-    stations_extra_info = api.get_stations_extraInfo()
+    stations_extra_info = api.get_stations_extra_info()
     stations_full_info = api.get_stations_full_info(
         get_stations_basic_info, stations_extra_info
     )

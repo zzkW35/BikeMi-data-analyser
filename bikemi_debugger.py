@@ -19,14 +19,14 @@ def find_stationPrinter(stations):
     user_input = input("What station are you searching for? ")
 
     # Remove accents, all the spaces and special chars from the input
-    user_inputEdit = re.sub("[^A-Za-z0-9]+", "", unidecode.unidecode(user_input))
+    user_input_edit = re.sub("[^A-Za-z0-9]+", "", unidecode.unidecode(user_input))
 
     for station in stations:
         # Temporarily treat the station names the same as the user_input
         stationEdit = re.sub("[^A-Za-z0-9]+", "", unidecode.unidecode(station["name"]))
 
-        if user_inputEdit != ("") and (
-            re.search(user_inputEdit, stationEdit, re.IGNORECASE)
+        if user_input_edit != ("") and (
+            re.search(user_input_edit, stationEdit, re.IGNORECASE)
             or re.search(user_input, station["station_id"], re.IGNORECASE)
         ):
             location_link = (
@@ -60,9 +60,14 @@ def stationStatus(stations):
 
 
 get_stations_basic_info = api.json_decoder(STATION_INFO)
-get_stations_extraInfo = api.get_stations_extraInfo()
+get_stations_extra_info = api.get_stations_extra_info()
+
+print(get_stations_extra_info)
+
 stations_full_info = api.get_stations_full_info(
-    get_stations_basic_info, get_stations_extraInfo
+    get_stations_basic_info, get_stations_extra_info
 )
+
+#print(stations_full_info)
 
 # print(find_stationPrinter(stations_full_info))
