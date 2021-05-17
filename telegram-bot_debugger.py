@@ -1,5 +1,5 @@
 import bikemi
-import emoji
+import emojis
 import os
 import logging
 import sys
@@ -7,13 +7,13 @@ import sys
 from functools import wraps
 from geopy.geocoders import MapBox
 from telegram import (
+    ChatAction,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     InlineQueryResultDocument,
-    ChatAction,
     KeyboardButton,
-    ReplyKeyboardMarkup,
     Location,
+    ReplyKeyboardMarkup,
 )
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 from threading import Thread
@@ -26,11 +26,39 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
 )
 
+# Function to build the Inline Keyboard Button menu
+def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None):
+    menu = [buttons[i : i + n_cols] for i in range(0, len(buttons), n_cols)]
+    if header_buttons:
+        menu.insert(0, header_buttons)
+    if footer_buttons:
+        menu.append(footer_buttons)
+    return menu
+
+
+# Function to setup the Keyboard Button menu
+def custom_keyboard():
+    search_keyboard = KeyboardButton(text=emojis.encode(":mag_right: Search station"))
+    nearest_keyboard = KeyboardButton(text="Nearest Station")
+    location_keyboard = KeyboardButton(
+        text=emojis.encode(":round_pushpin: Send current location"),
+        request_location=True,
+    )
+
+    custom_keyboard = [[search_keyboard] + [nearest_keyboard], [location_keyboard]]
+    return ReplyKeyboardMarkup(
+        custom_keyboard, resize_keyboard=True, one_time_keyboard=True, selective=True
+    )
+
+
 # Start command
 def start(update, context):
+    reply_markup = custom_keyboard()
+
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Enter a BikeMi station name to gather info",
+        text="Choose a function from the menu below",
+        reply_markup=reply_markup,
     )
 
 
@@ -47,27 +75,7 @@ def pull_stations():
     return stations_full_info
 
 
-# Function to build the button menu
-def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None):
-    menu = [buttons[i : i + n_cols] for i in range(0, len(buttons), n_cols)]
-    if header_buttons:
-        menu.insert(0, header_buttons)
-    if footer_buttons:
-        menu.append(footer_buttons)
-    return menu
-
-
-"""
-def city(update,context):
-  list_of_cities = ['Erode','Coimbatore','London', 'Thunder Bay', 'California']
-  button_list = []
-  for each in list_of_cities:
-     button_list.append(InlineKeyboardButton(each, callback_data = each))
-  reply_markup=InlineKeyboardMarkup(build_menu(button_list,n_cols=1)) #n_cols = 1 is for single column and mutliple rows
-  context.bot.send_message(chat_id=update.message.chat_id, text='Choose from the following',reply_markup=reply_markup)
-"""
-
-
+# Print station's info
 def print_result(station_raw):
     stationInfo = (
         "Name: "
@@ -89,6 +97,7 @@ def print_result(station_raw):
     return stationInfo
 
 
+# Display Inline Keyboard Button for the Map coordinates
 def maps_button(station_raw):
     button_list = []
     location_link = (
@@ -97,8 +106,7 @@ def maps_button(station_raw):
         + ","
         + str(station_raw["lon"])
     )
-
-    text = emoji.emojize(":pushpin: Open in Maps")
+    text = emojis.encode(":round_pushpin: Open in Maps")
 
     # Add the GMaps location button to the button list
     button_list.append(InlineKeyboardButton(text=text, url=location_link))
@@ -117,7 +125,7 @@ def search_station(update, context):
     api = bikemi.BikeMiApi()
     stations_full_info = pull_stations()
 
-    for station_raw in api.find_station(stations_full_info, " ".join(context.args)):
+    for station_raw in api.find_station(stations_full_info, update.message.text):
         station = print_result(station_raw)
         reply_markup = maps_button(station_raw)
         # Send Text
@@ -126,19 +134,19 @@ def search_station(update, context):
         )
 
 
-def find_nearest(update, context):
+def search_nearest(update, context):
     # Typing...
     context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
 
+    mapbox_token = os.environ.get("MAPBOX_TOKEN")
+    text_input = update.message.text
+    geolocator = MapBox(mapbox_token)
+    proximity = (45.464228552423435, 9.191557965278111)  # Duomo
+    location = geolocator.geocode(text_input, proximity=proximity)
     api = bikemi.BikeMiApi()
     stations_full_info = pull_stations()
-    textInput = " ".join(context.args)
-    mapbox_token = os.environ.get("MAPBOX_TOKEN")
-
-    geolocator = MapBox(mapbox_token)
-    location = geolocator.geocode(textInput)
     station_raw = api.get_nearest_station(
         stations_full_info, location.latitude, location.longitude
     )
@@ -152,19 +160,6 @@ def find_nearest(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=nearest_station,
-        reply_markup=reply_markup,
-    )
-
-
-def ask_location(update, context):
-    location_keyboard = KeyboardButton(
-        text="Send Current Location", request_location=True
-    )
-    custom_keyboard = [[location_keyboard]]
-    reply_markup = ReplyKeyboardMarkup(custom_keyboard)
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Would you mind sharing your location with me?",
         reply_markup=reply_markup,
     )
 
@@ -184,10 +179,9 @@ def get_location(update, context):
     station_raw = api.get_nearest_station(stations_full_info, latitude, longitude)
     reply_markup = maps_button(station_raw)
 
-    # Text Message
+    # Generate Text Message
     station = print_result(station_raw)
     nearest_station = "The nearest station is: \n" + station
-
     # Send text
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -196,57 +190,87 @@ def get_location(update, context):
     )
 
 
-"""
-def ask_search(update, context):
-
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="What station are you searching for?",
-
-        search_station(update, context)
-    )
-"""
-
-
 def main():
     telegram_token = os.environ.get("TELEGRAM_DEBUGGING_TOKEN")
 
     updater = Updater(token=telegram_token, use_context=True)
+    search_list = [
+        "search",
+        "Search",
+        "/search",
+        emojis.encode(":mag_right: Search station"),
+    ]
+    nearest_list = ["nearest", "Nearest", "/nearest", "Nearest Station"]
+    location_list = [
+        "location",
+        "Location",
+        "/location",
+        emojis.encode(":round_pushpin: Send current location"),
+    ]
+    command_list = search_list + nearest_list + location_list
 
     # Register handlers
     dispatcher = updater.dispatcher
-    dp = updater.dispatcher
 
     # Start command
     start_handler = CommandHandler("start", start)
     dispatcher.add_handler(start_handler)
 
     # Search Station handler
-    search_station_handler = CommandHandler("search", search_station)
-    dispatcher.add_handler(search_station_handler)
+    def browser(update, context):
+        # Search Station
+        for element in search_list:
+            if update.message.text == element:
+                update.message.reply_text(text="What station are you searching for?")
+                # Search station handler
+                search_station_handler = MessageHandler(
+                    Filters.text & (~Filters.command), search_station
+                )
+                dispatcher.add_handler(search_station_handler)
 
-    # Closest Station handler
-    find_nearest_handler = CommandHandler("nearest", find_nearest)
-    dispatcher.add_handler(find_nearest_handler)
+        # Nearest station
+        for element in nearest_list:
+            if update.message.text == element:
+                update.message.reply_text(
+                    text="Enter a place to get the nearest station"
+                )
+                # Nearest Station handler
+                search_nearest_handler = MessageHandler(
+                    Filters.text & (~Filters.command), search_nearest
+                )
+                dispatcher.add_handler(search_nearest_handler)
 
-    # Ask Location
-    ask_location_handler = CommandHandler("location", ask_location)
-    dispatcher.add_handler(ask_location_handler)
+        # Location
+        for element in location_list:
+            if update.message.text == element:
+                update.message.reply_text(
+                    text="Share your current location to get the nearest station to you"
+                )
+                # Get Location handler
+                get_location_handler = MessageHandler(Filters.location, get_location)
+                dispatcher.add_handler(get_location_handler)
 
-    # Get Location
+    for element in command_list:
+        browser_handler = MessageHandler(Filters.regex(element), browser)
+        dispatcher.add_handler(browser_handler)
+
+    # Get Location handler
     get_location_handler = MessageHandler(Filters.location, get_location)
     dispatcher.add_handler(get_location_handler)
 
+    # Function to stop and restart the bot from the chat
     def stop_and_restart():
         """Gracefully stop the Updater and replace the current process with a new one"""
         updater.stop()
         os.execl(sys.executable, sys.executable, *sys.argv)
 
+    # Function to stop the bot from the chat
     def restart(update, context):
         update.message.reply_text("Bot is restarting...")
         Thread(target=stop_and_restart).start()
 
-    dp.add_handler(
+    # Handler to stop the bot
+    dispatcher.add_handler(
         CommandHandler("r", restart, filters=Filters.user(username="@zzkW35"))
     )
 
