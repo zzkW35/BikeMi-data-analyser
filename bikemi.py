@@ -89,7 +89,10 @@ class BikeMiApi:
             info = station_list[1::2]  # Pick only the data placed in even positions
 
             # Data cleanup
-            titles = [i.replace('"', "").replace("{", "") for i in titles]
+            titles = [
+                i.replace('"', "").replace("{", "").replace("id", "station_id")
+                for i in titles
+            ]
             info = [i.replace('"', "").replace("}", "").replace("]", "") for i in info]
             # Parse the data in a dictionary where "titles" are the keys
             # and "info" are the values
@@ -107,10 +110,14 @@ class BikeMiApi:
         get_stations_basic_info_sorted = sorted(
             get_stations_basic_info, key=itemgetter("station_id")
         )
-        stations_extra_info_sorted = sorted(stations_extra_info, key=itemgetter("id"))
+        stations_extra_info_sorted = sorted(
+            stations_extra_info, key=itemgetter("station_id")
+        )
         stations_full_info = [
             a | b
-            for (a, b) in zip(stations_extra_info_sorted, get_stations_basic_info_sorted)
+            for (a, b) in zip(
+                stations_extra_info_sorted, get_stations_basic_info_sorted
+            )
         ]
 
         return stations_full_info
