@@ -15,7 +15,13 @@ from telegram import (
     Location,
     ReplyKeyboardMarkup,
 )
-from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+from telegram.ext import (
+    CallbackQueryHandler,
+    CommandHandler,
+    Filters,
+    MessageHandler,
+    Updater,
+)
 from threading import Thread
 from typing import Union, List
 
@@ -63,7 +69,7 @@ class TelegramBot:
 
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Choose a function from the menu below",
+            text=emojis.encode(":arrow_down: Choose a function from the menu below"),
             reply_markup=reply_markup,
         )
 
@@ -99,9 +105,22 @@ class TelegramBot:
         )
         return stationInfo
 
-    # Display Inline Keyboard Button for the Map coordinates
-    def maps_button(self, station_raw):
+    def callback_query(self, update, context):
+        query = update.callback_query
+        reply_markup = self.custom_keyboard()
+        # CallbackQueries need to be answered, even if no notification to the user is needed
+        query.answer()
+        if query.data == "main_menu_callback":
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=emojis.encode(":arrow_down: Choose a function from the menu below"),
+                reply_markup=reply_markup,
+            )
+
+    # Display Inline Keyboard Button for the Map coordinates and going back to Main menu
+    def inline_keyboard_buttons(self, station_raw):
         button_list = []
+        # Add the GMaps location button to the button list
         location_link = (
             "https://www.google.com/maps/search/?api=1&query="
             + str(station_raw["lat"])
@@ -109,9 +128,12 @@ class TelegramBot:
             + str(station_raw["lon"])
         )
         text = emojis.encode(":round_pushpin: Open in Maps")
-
-        # Add the GMaps location button to the button list
         button_list.append(InlineKeyboardButton(text=text, url=location_link))
+        # Add the main menu button to the button list
+        reply_markup = self.custom_keyboard()
+        button_list.append(
+            InlineKeyboardButton(text="Main Menu", callback_data="main_menu_callback")
+        )
         reply_markup = InlineKeyboardMarkup(
             self.build_menu(button_list, n_cols=1)
         )  # n_cols = 1 is for single column and mutliple rows
@@ -127,7 +149,7 @@ class TelegramBot:
 
         for station_raw in api.find_station(stations_full_info, update.message.text):
             station = self.print_result(station_raw)
-            reply_markup = self.maps_button(station_raw)
+            reply_markup = self.inline_keyboard_buttons(station_raw)
             # Send Text
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -153,7 +175,7 @@ class TelegramBot:
         station_raw = api.get_nearest_station(
             stations_full_info, location.latitude, location.longitude
         )
-        reply_markup = self.maps_button(station_raw)
+        reply_markup = self.inline_keyboard_buttons(station_raw)
 
         # Generate Text Message
         station = self.print_result(station_raw)
@@ -179,7 +201,7 @@ class TelegramBot:
         api = bikemi.BikeMiApi()
         stations_full_info = self.pull_stations()
         station_raw = api.get_nearest_station(stations_full_info, latitude, longitude)
-        reply_markup = self.maps_button(station_raw)
+        reply_markup = self.inline_keyboard_buttons(station_raw)
 
         # Generate Text Message
         station = self.print_result(station_raw)
@@ -193,8 +215,8 @@ class TelegramBot:
 
     def main(self):
         telegram_token = os.environ.get("TELEGRAM_TOKEN")
-
         updater = Updater(token=telegram_token, use_context=True)
+
         search_list = [
             "/search",
             emojis.encode(":mag_right: Search Station"),
@@ -265,6 +287,10 @@ class TelegramBot:
         # Get Location handler
         get_location_handler = MessageHandler(Filters.location, self.get_location)
         self.dispatcher.add_handler(get_location_handler)
+
+        # Callback query handler
+        main_menu_handler = CallbackQueryHandler(self.callback_query)
+        self.dispatcher.add_handler(main_menu_handler)
 
         # Function to stop and restart the bot from the chat
         def stop_and_restart():
