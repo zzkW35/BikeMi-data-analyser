@@ -68,6 +68,6 @@ stations_full_info = api.get_stations_full_info(
     get_stations_basic_info, get_stations_extra_info
 )
 
-#print(stations_full_info)
+# print(stations_full_info)
 
 # print(find_stationPrinter(stations_full_info))

@@ -4,13 +4,13 @@ import requests
 import unidecode
 
 from geopy import distance
-from math import cos, asin, sqrt, pi
+from math import asin, cos, pi, sqrt
 from operator import itemgetter
 
 
 class BikeMiApi:
 
-    # Generate a list of stations, stored as dictionaries, starting from the
+    # Generate a list of stations, stored as dictionaries, manipulating the
     # json files provided by BikeMi at https://bikemi.com/dati-aperti/
     def json_decoder(self, info_url):
         resp = requests.get(info_url)
@@ -27,16 +27,16 @@ class BikeMiApi:
         start = raw.find(placeholder) + len(placeholder)
         end = raw.find('"baseUrl":"https://bikemi.com"')
         station_extra_info_raw = raw[start:end].split("DockGroup:")
-        # Each station is a string inside the list called "stationExtraInfo"
+        # Each station is a string inside the list called "station_extra_info_list"
         station_extra_info_list = []
         station_list = []
-        del station_extra_info_raw[0]
+        del station_extra_info_raw[0]  # Remove the first element, which is empty
         # Split the raw code into small chunks of data
         for station in station_extra_info_raw:
             station = station.split(",")
             data = [word for line in station for word in line.split(":")]
 
-            # Create station_list list containing only the relevant data
+            # Create station_list containing only the relevant data
             # Each station with its data is a list
             if len(data) == 49:
                 station_list.extend(
@@ -85,10 +85,9 @@ class BikeMiApi:
                     )
                 )
 
+            # Data cleanup
             titles = station_list[::2]  # Pick only the data placed in odd positions
             info = station_list[1::2]  # Pick only the data placed in even positions
-
-            # Data cleanup
             titles = [
                 i.replace('"', "").replace("{", "").replace("id", "station_id")
                 for i in titles
@@ -123,20 +122,20 @@ class BikeMiApi:
         return stations_full_info
 
     # Search and yield stations by typing their names or their unique IDs,
-    # it's meant to be used with STATION_INFO.
+    # it's meant to be used with
+    # https://gbfs.urbansharing.com/bikemi.com/station_information.json
     def find_station(self, stations, user_input):
-
         # Remove accents, all the spaces and special chars from the input
         user_input_edit = re.sub("[^A-Za-z0-9]+", "", unidecode.unidecode(user_input))
 
         for station in stations:
-            # Temporarily treat the station names the same as the user_input
-            stationEdit = re.sub(
+            # Temporarily treat the station names like user_input
+            station_edit = re.sub(
                 "[^A-Za-z0-9]+", "", unidecode.unidecode(station["name"])
             )
-
+            # Check if user_input and stations match
             if user_input_edit != ("") and (
-                re.search(user_input_edit, stationEdit, re.IGNORECASE)
+                re.search(user_input_edit, station_edit, re.IGNORECASE)
                 or re.search(user_input, station["station_id"], re.IGNORECASE)
             ):
                 yield station
