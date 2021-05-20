@@ -90,15 +90,13 @@ class TelegramBot:
         stationInfo = (
             "Name: "
             + str(station_raw["name"])
-            + "\nID: "
-            + str(station_raw["station_id"])
             + "\nAddress: "
             + str(station_raw["address"])
             + "\nBikes: "
             + str(station_raw["bike"])
             + "\nElectric Bikes: "
             + str(station_raw["ebike"])
-            + "\nElectric Bikes with childseat: "
+            + "\nElectric Bikes with child seat: "
             + str(station_raw["ebike_with_childseat"])
             + "\nAvailable docks: "
             + str(station_raw["availableDocks"])
