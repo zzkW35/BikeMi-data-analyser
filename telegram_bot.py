@@ -90,8 +90,6 @@ class TelegramBotDebugger:
         stationInfo = (
             "Name: "
             + str(station_raw["name"])
-            + "\nID: "
-            + str(station_raw["station_id"])
             + "\nAddress: "
             + str(station_raw["address"])
             + "\nBikes: "
