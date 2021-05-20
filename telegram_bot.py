@@ -88,17 +88,22 @@ class TelegramBotDebugger:
     # Print station's info
     def print_result(self, station_raw):
         stationInfo = (
-            "Name: "
+            emojis.encode(":busstop: Name: ")
             + str(station_raw["name"])
-            + "\nAddress: "
+            + "\n"
+            + emojis.encode(":round_pushpin: Address: ")
             + str(station_raw["address"])
-            + "\nBikes: "
+            + "\n"
+            + emojis.encode(":bike: Bikes: ")
             + str(station_raw["bike"])
-            + "\nElectric Bikes: "
+            + "\n"
+            + emojis.encode(":zap: Electric Bikes: ")
             + str(station_raw["ebike"])
-            + "\nElectric Bikes with child seat: "
+            + "\n"
+            + emojis.encode(":seat: Electric Bikes with Child Seat: ")
             + str(station_raw["ebike_with_childseat"])
-            + "\nAvailable docks: "
+            + "\n"
+            + emojis.encode(":parking: Available docks: ")
             + str(station_raw["availableDocks"])
         )
 
@@ -112,7 +117,9 @@ class TelegramBotDebugger:
         if query.data == "main_menu_callback":
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=emojis.encode(":arrow_down: Choose a function from the menu below"),
+                text=emojis.encode(
+                    ":arrow_down: Choose a function from the menu below"
+                ),
                 reply_markup=reply_markup,
             )
 
@@ -131,7 +138,10 @@ class TelegramBotDebugger:
         # Add the main menu button to the button list
         reply_markup = self.custom_keyboard()
         button_list.append(
-            InlineKeyboardButton(text="Main Menu", callback_data="main_menu_callback")
+            InlineKeyboardButton(
+                text=emojis.encode(":gear: Main Menu"),
+                callback_data="main_menu_callback",
+            )
         )
         reply_markup = InlineKeyboardMarkup(
             self.build_menu(button_list, n_cols=1)
@@ -240,7 +250,9 @@ class TelegramBotDebugger:
             for element in search_list:
                 if update.message.text == element:
                     update.message.reply_text(
-                        text="What station are you searching for?"
+                        text=emojis.encode(
+                            ":mag_right: What station are you searching for?"
+                        )
                     )
                     # Search station handler
                     self.search_station_handler = MessageHandler(
