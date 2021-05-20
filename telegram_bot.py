@@ -91,22 +91,22 @@ class TelegramBot:
     def print_result(self, station_raw):
         stationInfo = (
             emojis.encode(":busstop: Name: ")
-            + str(station_raw["name"])
+            + station_raw["name"]
             + "\n"
             + emojis.encode(":round_pushpin: Address: ")
-            + str(station_raw["address"])
+            + station_raw["address"]
             + "\n"
             + emojis.encode(":bike: Bikes: ")
-            + str(station_raw["bike"])
+            + station_raw["bike"]
             + "\n"
             + emojis.encode(":zap: Electric Bikes: ")
-            + str(station_raw["ebike"])
+            + station_raw["ebike"]
             + "\n"
             + emojis.encode(":seat: Electric Bikes with Child Seat: ")
-            + str(station_raw["ebike_with_childseat"])
+            + station_raw["ebike_with_childseat"]
             + "\n"
             + emojis.encode(":parking: Available docks: ")
-            + str(station_raw["availableDocks"])
+            + station_raw["availableDocks"]
         )
         return stationInfo
 
