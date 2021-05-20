@@ -96,7 +96,7 @@ class TelegramBotDebugger:
             + str(station_raw["bike"])
             + "\nElectric Bikes: "
             + str(station_raw["ebike"])
-            + "\nElectric Bikes with childseat: "
+            + "\nElectric Bikes with child seat: "
             + str(station_raw["ebike_with_childseat"])
             + "\nAvailable docks: "
             + str(station_raw["availableDocks"])
