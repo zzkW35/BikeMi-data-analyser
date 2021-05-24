@@ -49,7 +49,9 @@ class TelegramBotDebugger:
         search_keyboard = KeyboardButton(
             text=emojis.encode(":mag_right: Search Station")
         )
-        nearest_keyboard = KeyboardButton(text="Nearest Station")
+        nearest_keyboard = KeyboardButton(
+            text=emojis.encode(":walking: Nearest Station")
+        )
         location_keyboard = KeyboardButton(
             text=emojis.encode(":round_pushpin: Send current location"),
             request_location=True,
@@ -230,7 +232,7 @@ class TelegramBotDebugger:
             "/search",
             emojis.encode(":mag_right: Search Station"),
         ]
-        nearest_list = ["/nearest", "Nearest Station"]
+        nearest_list = ["/nearest", emojis.encode(":walking: Nearest Station")]
         location_list = [
             "/location",
             emojis.encode(":round_pushpin: Send current location"),
@@ -264,7 +266,9 @@ class TelegramBotDebugger:
             for element in nearest_list:
                 if update.message.text == element:
                     update.message.reply_text(
-                        text="Enter a place to get the nearest station"
+                        text=emojis.encode(
+                            ":walking: Enter a place to get the nearest station"
+                        )
                     )
                     # Nearest Station handler
                     self.search_nearest_handler = MessageHandler(
