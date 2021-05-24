@@ -158,3 +158,14 @@ class BikeMiApi:
         # said station in "stations_full_info" list
         index = distances.index(smallest)
         return stations_full_info[index]
+
+    # Generate dictionaries containing info about trips, by feeding the 
+    # function with trips.json file, which can be obtained by requesting 
+    # a copy of your data from https://bikemi.com/en/profile/your-data
+    def trip_decoder(self, trip_file):
+        with open(trip_file, "r") as reader:
+            trips = json.load(
+                reader
+            )  # It's a list of dictionaries, each dict is a trip
+            for trip in trips:
+                yield trip
