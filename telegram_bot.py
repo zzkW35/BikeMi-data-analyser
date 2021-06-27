@@ -39,8 +39,8 @@ class TelegramBotDebugger:
         level=logging.DEBUG,
     )
 
-    # Function to build the Inline Keyboard Button menu
     def build_menu(self, buttons, n_cols, header_buttons=None, footer_buttons=None):
+        """Function to build the Inline Keyboard Button menu"""
         menu = [buttons[i : i + n_cols] for i in range(0, len(buttons), n_cols)]
         if header_buttons:
             menu.insert(0, header_buttons)
@@ -48,8 +48,8 @@ class TelegramBotDebugger:
             menu.append(footer_buttons)
         return menu
 
-    # Function to setup the Keyboard Button menu
     def custom_keyboard(self):
+        """Function to setup the Keyboard Button menu"""
         search_keyboard = KeyboardButton(
             text=emojis.encode(":mag_right: Search Station")
         )
@@ -80,8 +80,8 @@ class TelegramBotDebugger:
 
     # BikeMi time
 
-    # Access the API and create vars
     def pull_stations(self):
+        """Access the API and create vars"""
         api = bikemi.BikeMiApi()
         get_stations_basic_info = api.json_decoder(self.STATION_INFO)
         stations_extra_info = api.get_stations_extra_info()
@@ -90,8 +90,8 @@ class TelegramBotDebugger:
         )
         return stations_full_info
 
-    # Print station's info
     def print_result(self, station_raw):
+        """Display station's info"""
         stationInfo = (
             emojis.encode(":busstop: Name: ")
             + station_raw["name"]
@@ -128,8 +128,8 @@ class TelegramBotDebugger:
                 reply_markup=reply_markup,
             )
 
-    # Display Inline Keyboard Button for the Map coordinates and to go back to Main menu
     def inline_keyboard_buttons(self, station_raw):
+        """Display Inline Keyboard Button for the Map coordinates and to go back to Main menu"""
         button_list = []
         # Add the GMaps location button to the button list
         location_link = (
