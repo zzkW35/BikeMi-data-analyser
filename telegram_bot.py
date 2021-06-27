@@ -225,36 +225,41 @@ class TelegramBotDebugger:
         )
 
     # Start ConversationHandler functions
-    SEARCH_STATION_COMMAND = range(1)
+    HANDLE_COMMAND = range(1)
 
-    def search_station_search(self, update: Update, context: CallbackContext) -> int:
-        update.message.reply_text(
-            emojis.encode(
-                ":mag_right: What station are you searching for? \n \n /cancel"
+    def read_command(self, update: Update, context: CallbackContext) -> int:
+
+        if update.message.text == "/search" or update.message.text == emojis.encode(
+            ":mag_right: Search Station"
+        ):
+            update.message.reply_text(
+                emojis.encode(
+                    ":mag_right: What station are you searching for? \n \n /cancel"
+                )
             )
-        )
-        return self.SEARCH_STATION_COMMAND
+            context.user_data["command"] = "search"
 
-    def search_station_command(self, update: Update, context: CallbackContext) -> int:
+        if update.message.text == "/nearest" or update.message.text == emojis.encode(
+            ":walking: Nearest Station"
+        ):
+            update.message.reply_text(
+                emojis.encode(
+                    ":walking: Enter a place to get the nearest station \n \n /cancel"
+                )
+            )
+            context.user_data["command"] = "nearest"
+        return self.HANDLE_COMMAND
+
+    def handle_command(self, update: Update, context: CallbackContext) -> int:
         context.user_data["place"] = update.message.text
         place = context.user_data["place"]
-        self.search_station(update, context, place)
-        return ConversationHandler.END
 
-    NEAREST_STATION_COMMAND = range(1)
+        if context.user_data["command"] == "search":
+            self.search_station(update, context, place)
 
-    def nearest_station_search(self, update: Update, context: CallbackContext) -> int:
-        update.message.reply_text(
-            emojis.encode(
-                ":walking: Enter a place to get the nearest station \n \n /cancel"
-            )
-        )
-        return self.NEAREST_STATION_COMMAND
+        if context.user_data["command"] == "nearest":
+            self.search_nearest(update, context, place)
 
-    def nearest_station_command(self, update: Update, context: CallbackContext) -> int:
-        context.user_data["place"] = update.message.text
-        place = context.user_data["place"]
-        self.search_nearest(update, context, place)
         return ConversationHandler.END
 
     def cancel_command(self, update: Update, context: CallbackContext) -> int:
@@ -263,6 +268,7 @@ class TelegramBotDebugger:
         update.message.reply_text(
             emojis.encode(":thumbsup: Canceled!"), reply_markup=reply_markup
         )
+        context.user_data.clear()
         return ConversationHandler.END
 
     def wrong_input(self, update: Update, context: CallbackContext) -> int:
@@ -271,6 +277,7 @@ class TelegramBotDebugger:
             "That isn't the name of a BikeMi station, cancelling...",
             reply_markup=reply_markup,
         )
+        context.user_data.clear()
         return ConversationHandler.END
 
     # End ConversationHandler functions
@@ -286,23 +293,28 @@ class TelegramBotDebugger:
         start_handler = CommandHandler("start", self.start)
         self.dispatcher.add_handler(start_handler)
 
-        # Search-Specific conv handler
-        search_conv_handler = ConversationHandler(
+        # Build conv handler
+        conv_handler = ConversationHandler(
             entry_points=[
-                CommandHandler("search", self.search_station_search),
+                CommandHandler("search", self.read_command),
                 MessageHandler(
                     Filters.regex(emojis.encode(":mag_right: Search Station")),
-                    self.search_station_search,
+                    self.read_command,
+                ),
+                CommandHandler("nearest", self.read_command),
+                MessageHandler(
+                    Filters.regex(emojis.encode(":walking: Nearest Station")),
+                    self.read_command,
                 ),
             ],
             states={
-                self.SEARCH_STATION_COMMAND: [
+                self.HANDLE_COMMAND: [
                     MessageHandler(
                         Filters.text
                         & ~Filters.command
                         & ~Filters.regex(emojis.encode(":mag_right: Search Station"))
                         & ~Filters.regex(emojis.encode(":walking: Nearest Station")),
-                        self.search_station_command,
+                        self.handle_command,
                     )
                 ],
             },
@@ -322,45 +334,7 @@ class TelegramBotDebugger:
             ],
         )
 
-        self.dispatcher.add_handler(search_conv_handler)
-
-        # Nearest-Specific conv handler
-        nearest_conv_handler = ConversationHandler(
-            entry_points=[
-                CommandHandler("nearest", self.nearest_station_search),
-                MessageHandler(
-                    Filters.regex(emojis.encode(":walking: Nearest Station")),
-                    self.nearest_station_search,
-                ),
-            ],
-            states={
-                self.NEAREST_STATION_COMMAND: [
-                    MessageHandler(
-                        Filters.text
-                        & ~Filters.command
-                        & ~Filters.regex(emojis.encode(":mag_right: Search Station"))
-                        & ~Filters.regex(emojis.encode(":walking: Nearest Station")),
-                        self.nearest_station_command,
-                    )
-                ],
-            },
-            fallbacks=[
-                CommandHandler("cancel", self.cancel_command),
-                CommandHandler("search", self.wrong_input),
-                MessageHandler(
-                    Filters.regex(emojis.encode(":mag_right: Search Station")),
-                    self.wrong_input,
-                ),
-                CommandHandler("nearest", self.wrong_input),
-                MessageHandler(
-                    Filters.regex(emojis.encode(":walking: Nearest Station")),
-                    self.wrong_input,
-                ),
-                CommandHandler("location", self.wrong_input),
-            ],
-        )
-
-        self.dispatcher.add_handler(nearest_conv_handler)
+        self.dispatcher.add_handler(conv_handler)
 
         # Get Location handler
         get_location_handler = MessageHandler(Filters.location, self.get_location)
