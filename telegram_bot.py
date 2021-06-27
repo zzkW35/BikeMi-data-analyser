@@ -14,10 +14,14 @@ from telegram import (
     KeyboardButton,
     Location,
     ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+    Update,
 )
 from telegram.ext import (
     CallbackQueryHandler,
+    CallbackContext,
     CommandHandler,
+    ConversationHandler,
     Filters,
     MessageHandler,
     Updater,
@@ -69,9 +73,8 @@ class TelegramBot:
     def start(self, update, context):
         reply_markup = self.custom_keyboard()
 
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=emojis.encode(":arrow_down: Choose a function from the menu below"),
+        update.message.reply_text(
+            emojis.encode(":arrow_down: Choose a function from the menu below"),
             reply_markup=reply_markup,
         )
 
@@ -124,7 +127,7 @@ class TelegramBot:
                 reply_markup=reply_markup,
             )
 
-    # Display Inline Keyboard Button for the Map coordinates and going back to Main menu
+    # Display Inline Keyboard Button for the Map coordinates and to go back to Main menu
     def inline_keyboard_buttons(self, station_raw):
         button_list = []
         # Add the GMaps location button to the button list
@@ -149,7 +152,7 @@ class TelegramBot:
         )  # n_cols = 1 is for single column and mutliple rows
         return reply_markup
 
-    def search_station(self, update, context):
+    def search_station(self, update, context, place):
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
@@ -157,7 +160,7 @@ class TelegramBot:
         api = bikemi.BikeMiApi()
         stations_full_info = self.pull_stations()
 
-        for station_raw in api.find_station(stations_full_info, update.message.text):
+        for station_raw in api.find_station(stations_full_info, place):
             station = self.print_result(station_raw)
             reply_markup = self.inline_keyboard_buttons(station_raw)
             # Send Text
@@ -166,19 +169,17 @@ class TelegramBot:
                 text=station,
                 reply_markup=reply_markup,
             )
-            self.dispatcher.remove_handler(self.search_station_handler)
 
-    def search_nearest(self, update, context):
+    def search_nearest(self, update, context, place):
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
         )
         # Setup MapBox
         mapbox_token = os.environ.get("MAPBOX_TOKEN")
-        text_input = update.message.text
         geolocator = MapBox(mapbox_token)
         proximity = (45.464228552423435, 9.191557965278111)  # Duomo
-        location = geolocator.geocode(text_input, proximity=proximity)
+        location = geolocator.geocode(place, proximity=proximity)
 
         api = bikemi.BikeMiApi()
         stations_full_info = self.pull_stations()
@@ -196,15 +197,13 @@ class TelegramBot:
             text=nearest_station,
             reply_markup=reply_markup,
         )
-        self.dispatcher.remove_handler(self.search_nearest_handler)
 
-    def get_location(self, update, context):
+    def get_location(self, update, context, user_location):
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
         )
         # Store user's latitute and longitude
-        user_location = update.message["location"]
         latitude = float(user_location["latitude"])
         longitude = float(user_location["longitude"])
 
@@ -223,21 +222,82 @@ class TelegramBot:
             reply_markup=reply_markup,
         )
 
+    # Start ConversationHandler functions
+    HANDLE_COMMAND = range(1)
+
+    def read_command(self, update: Update, context: CallbackContext) -> int:
+
+        if update.message.text == "/search" or update.message.text == emojis.encode(
+            ":mag_right: Search Station"
+        ):
+            update.message.reply_text(
+                emojis.encode(
+                    ":mag_right: What station are you searching for? \n \n /cancel"
+                )
+            )
+            context.user_data["command"] = "search"
+
+        if update.message.text == "/nearest" or update.message.text == emojis.encode(
+            ":walking: Nearest Station"
+        ):
+            update.message.reply_text(
+                emojis.encode(
+                    ":walking: Enter a place to get the nearest station \n \n /cancel"
+                )
+            )
+            context.user_data["command"] = "nearest"
+
+        if update.message.text == "/location":
+            reply_markup = self.custom_keyboard()
+            update.message.reply_text(
+                emojis.encode(
+                    ":round_pushpin: Share your current location to get the nearest station to you \n \n /cancel"
+                ),
+                reply_markup=reply_markup,
+            )
+            context.user_data["command"] = "location"
+
+        return self.HANDLE_COMMAND
+
+    def handle_command(self, update: Update, context: CallbackContext) -> int:
+        context.user_data["place"] = update.message.text
+        place = context.user_data["place"]
+        context.user_data["location"] = update.message["location"]
+        user_location = context.user_data["location"]
+
+        if context.user_data["command"] == "search":
+            self.search_station(update, context, place)
+
+        if context.user_data["command"] == "nearest":
+            self.search_nearest(update, context, place)
+
+        if context.user_data["command"] == "location":
+            self.get_location(update, context, user_location)
+
+        return ConversationHandler.END
+
+    def cancel_command(self, update: Update, context: CallbackContext) -> int:
+        """Cancels and ends the conversation."""
+        reply_markup = self.custom_keyboard()
+        update.message.reply_text(
+            emojis.encode(":thumbsup: Canceled!"), reply_markup=reply_markup
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+
+    def wrong_input(self, update: Update, context: CallbackContext) -> int:
+        reply_markup = self.custom_keyboard()
+        update.message.reply_text(
+            "That isn't the name of a BikeMi station, cancelling...",
+            reply_markup=reply_markup,
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+    # End ConversationHandler functions
+
     def main(self):
         telegram_token = os.environ.get("TELEGRAM_TOKEN")
         updater = Updater(token=telegram_token, use_context=True)
-
-        search_list = [
-            "/search",
-            emojis.encode(":mag_right: Search Station"),
-        ]
-        nearest_list = ["/nearest", emojis.encode(":walking: Nearest Station")]
-        location_list = [
-            "/location",
-            emojis.encode(":round_pushpin: Send current location"),
-        ]
-        easteregg_list = ["Deez", "deez"]
-        command_list = search_list + nearest_list + location_list + easteregg_list
 
         # Register handlers
         self.dispatcher = updater.dispatcher
@@ -246,61 +306,52 @@ class TelegramBot:
         start_handler = CommandHandler("start", self.start)
         self.dispatcher.add_handler(start_handler)
 
-        #
-        def browser(update, context):
-            # Search Station
-            for element in search_list:
-                if update.message.text == element:
-                    update.message.reply_text(
-                        text=emojis.encode(
-                            ":mag_right: What station are you searching for?"
-                        )
+        # Build conv handler
+        conv_handler = ConversationHandler(
+            entry_points=[
+                CommandHandler("search", self.read_command),
+                MessageHandler(
+                    Filters.regex(emojis.encode(":mag_right: Search Station")),
+                    self.read_command,
+                ),
+                CommandHandler("nearest", self.read_command),
+                MessageHandler(
+                    Filters.regex(emojis.encode(":walking: Nearest Station")),
+                    self.read_command,
+                ),
+                CommandHandler("location", self.read_command),
+            ],
+            states={
+                self.HANDLE_COMMAND: [
+                    MessageHandler(
+                        (Filters.text
+                        | Filters.location)
+                        & ~(
+                            Filters.command
+                            | Filters.regex(emojis.encode(":mag_right: Search Station"))
+                            | Filters.regex(emojis.encode(":walking: Nearest Station"))
+                        ),
+                        self.handle_command,
                     )
-                    # Search station handler
-                    self.search_station_handler = MessageHandler(
-                        Filters.text & (~Filters.command), self.search_station
-                    )
-                    self.dispatcher.add_handler(self.search_station_handler)
+                ],
+            },
+            fallbacks=[
+                CommandHandler("cancel", self.cancel_command),
+                CommandHandler("search", self.wrong_input),
+                MessageHandler(
+                    Filters.regex(emojis.encode(":mag_right: Search Station")),
+                    self.wrong_input,
+                ),
+                CommandHandler("nearest", self.wrong_input),
+                MessageHandler(
+                    Filters.regex(emojis.encode(":walking: Nearest Station")),
+                    self.wrong_input,
+                ),
+                CommandHandler("location", self.wrong_input),
+            ],
+        )
 
-            # Nearest station
-            for element in nearest_list:
-                if update.message.text == element:
-                    update.message.reply_text(
-                        text=emojis.encode(
-                            ":walking: Enter a place to get the nearest station"
-                        )
-                    )
-                    # Nearest Station handler
-                    self.search_nearest_handler = MessageHandler(
-                        Filters.text & (~Filters.command), self.search_nearest
-                    )
-                    self.dispatcher.add_handler(self.search_nearest_handler)
-
-            # Location
-            for element in location_list:
-                if update.message.text == element:
-                    update.message.reply_text(
-                        text="Share your current location to get the nearest station to you"
-                    )
-                    # Get Location handler
-                    self.get_location_handler = MessageHandler(
-                        Filters.location, self.get_location
-                    )
-                    self.dispatcher.add_handler(get_location_handler)
-
-            # Easter Egg
-            for element in easteregg_list:
-                if update.message.text == element:
-                    update.message.reply_text(text="NUUUUUUUUUUUUUUUUUUUUUUUUTZ")
-
-        # Browser handler
-        for element in command_list:
-            browser_handler = MessageHandler(Filters.regex(element), browser)
-            self.dispatcher.add_handler(browser_handler)
-
-        # Get Location handler
-        get_location_handler = MessageHandler(Filters.location, self.get_location)
-        self.dispatcher.add_handler(get_location_handler)
+        self.dispatcher.add_handler(conv_handler)
 
         # Callback query handler
         main_menu_handler = CallbackQueryHandler(self.callback_query)
