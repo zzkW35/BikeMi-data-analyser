@@ -120,11 +120,8 @@ class TelegramBotDebugger:
         # CallbackQueries need to be answered, even if no notification to the user is needed
         query.answer()
         if query.data == "main_menu_callback":
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=emojis.encode(
-                    ":arrow_down: Choose a function from the menu below"
-                ),
+            update.message.reply_text(
+                emojis.encode(":arrow_down: Choose a function from the menu below"),
                 reply_markup=reply_markup,
             )
 
@@ -166,9 +163,8 @@ class TelegramBotDebugger:
             station = self.print_result(station_raw)
             reply_markup = self.inline_keyboard_buttons(station_raw)
             # Send Text
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=station,
+            update.message.reply_text(
+                station,
                 reply_markup=reply_markup,
             )
 
@@ -193,9 +189,8 @@ class TelegramBotDebugger:
         station = self.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=nearest_station,
+        update.message.reply_text(
+            nearest_station,
             reply_markup=reply_markup,
         )
 
@@ -218,9 +213,8 @@ class TelegramBotDebugger:
         station = self.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=nearest_station,
+        update.message.reply_text(
+            nearest_station,
             reply_markup=reply_markup,
         )
 
