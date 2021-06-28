@@ -311,9 +311,12 @@ class TelegramBotDebugger:
                 self.HANDLE_COMMAND: [
                     MessageHandler(
                         Filters.text
-                        & ~Filters.command
-                        & ~Filters.regex(emojis.encode(":mag_right: Search Station"))
-                        & ~Filters.regex(emojis.encode(":walking: Nearest Station")),
+                        & ~(
+                            Filters.command
+                            | Filters.regex(emojis.encode(":mag_right: Search Station"))
+                            | Filters.regex(emojis.encode(":walking: Nearest Station"))
+                            | Filters.location
+                        ),
                         self.handle_command,
                     )
                 ],
@@ -331,6 +334,7 @@ class TelegramBotDebugger:
                     self.wrong_input,
                 ),
                 CommandHandler("location", self.wrong_input),
+                MessageHandler(Filters.location, self.wrong_input),
             ],
         )
 
