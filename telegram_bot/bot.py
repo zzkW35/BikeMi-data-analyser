@@ -136,7 +136,9 @@ class TelegramBotDebugger:
         longitude = float(user_location["longitude"])
 
         stations_full_info = self.pull_stations()
-        station_raw = self.api.get_nearest_station(stations_full_info, latitude, longitude)
+        station_raw = self.api.get_nearest_station(
+            stations_full_info, latitude, longitude
+        )
         reply_markup = self.tools.inline_keyboard_buttons(station_raw)
 
         # Generate Text Message
@@ -157,9 +159,7 @@ class TelegramBotDebugger:
             ":mag_right: Search Station"
         ):
             update.message.reply_text(
-                encode(
-                    ":mag_right: What station are you searching for? \n \n /cancel"
-                )
+                encode(":mag_right: What station are you searching for? \n \n /cancel")
             )
             context.user_data["command"] = "search"
 

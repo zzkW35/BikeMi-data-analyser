@@ -20,12 +20,8 @@ class Tools:
 
     def custom_keyboard(self):
         """Function to setup the Keyboard Button menu"""
-        search_keyboard = KeyboardButton(
-            text=encode(":mag_right: Search Station")
-        )
-        nearest_keyboard = KeyboardButton(
-            text=encode(":walking: Nearest Station")
-        )
+        search_keyboard = KeyboardButton(text=encode(":mag_right: Search Station"))
+        nearest_keyboard = KeyboardButton(text=encode(":walking: Nearest Station"))
         location_keyboard = KeyboardButton(
             text=encode(":round_pushpin: Send current location"),
             request_location=True,
@@ -40,6 +36,7 @@ class Tools:
         )
 
     def callback_query(self, update, context):
+        """Display the Inline Keyboard Buttons when the user taps on the "Main Menu" button"""
         query = update.callback_query
         reply_markup = self.custom_keyboard()
         # CallbackQueries need to be answered, even if no notification to the user is needed
@@ -47,9 +44,7 @@ class Tools:
         if query.data == "main_menu_callback":
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=encode(
-                    ":arrow_down: Choose a function from the menu below"
-                ),
+                text=encode(":arrow_down: Choose a function from the menu below"),
                 reply_markup=reply_markup,
             )
 
