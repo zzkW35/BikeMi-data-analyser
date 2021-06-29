@@ -11,11 +11,9 @@ from telegram import (
     ChatAction,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    InlineQueryResultDocument,
     KeyboardButton,
     Location,
     ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
     Update,
 )
 from telegram.ext import (
@@ -28,7 +26,6 @@ from telegram.ext import (
     Updater,
 )
 from threading import Thread
-from typing import Union, List
 
 
 class TelegramBotDebugger:
