@@ -164,9 +164,8 @@ class TelegramBot:
             station = self.print_result(station_raw)
             reply_markup = self.inline_keyboard_buttons(station_raw)
             # Send Text
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=station,
+            update.message.reply_text(
+                station,
                 reply_markup=reply_markup,
             )
 
@@ -192,9 +191,8 @@ class TelegramBot:
         station = self.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=nearest_station,
+        update.message.reply_text(
+            nearest_station,
             reply_markup=reply_markup,
         )
 
@@ -216,9 +214,8 @@ class TelegramBot:
         station = self.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=nearest_station,
+        update.message.reply_text(
+            nearest_station,
             reply_markup=reply_markup,
         )
 
