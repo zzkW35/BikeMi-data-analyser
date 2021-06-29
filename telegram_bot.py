@@ -1,20 +1,18 @@
 import bikemi
-import emojis
 import os
 import logging
 import sys
 
+from emojis import encode
 from functools import wraps
 from geopy.geocoders import MapBox
 from telegram import (
     ChatAction,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    InlineQueryResultDocument,
     KeyboardButton,
     Location,
     ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
     Update,
 )
 from telegram.ext import (
@@ -27,7 +25,6 @@ from telegram.ext import (
     Updater,
 )
 from threading import Thread
-from typing import Union, List
 
 
 class TelegramBot:
@@ -39,8 +36,8 @@ class TelegramBot:
         level=logging.INFO,
     )
 
-    # Function to build the Inline Keyboard Button menu
     def build_menu(self, buttons, n_cols, header_buttons=None, footer_buttons=None):
+        """Function to build the Inline Keyboard Button menu"""
         menu = [buttons[i : i + n_cols] for i in range(0, len(buttons), n_cols)]
         if header_buttons:
             menu.insert(0, header_buttons)
@@ -48,16 +45,12 @@ class TelegramBot:
             menu.append(footer_buttons)
         return menu
 
-    # Function to setup the Keyboard Button menu
     def custom_keyboard(self):
-        search_keyboard = KeyboardButton(
-            text=emojis.encode(":mag_right: Search Station")
-        )
-        nearest_keyboard = KeyboardButton(
-            text=emojis.encode(":walking: Nearest Station")
-        )
+        """Function to setup the Keyboard Button menu"""
+        search_keyboard = KeyboardButton(text=encode(":mag_right: Search Station"))
+        nearest_keyboard = KeyboardButton(text=encode(":walking: Nearest Station"))
         location_keyboard = KeyboardButton(
-            text=emojis.encode(":round_pushpin: Send current location"),
+            text=encode(":round_pushpin: Send current location"),
             request_location=True,
         )
 
@@ -74,14 +67,14 @@ class TelegramBot:
         reply_markup = self.custom_keyboard()
 
         update.message.reply_text(
-            emojis.encode(":arrow_down: Choose a function from the menu below"),
+            encode(":arrow_down: Choose a function from the menu below"),
             reply_markup=reply_markup,
         )
 
     # BikeMi time
 
-    # Access the API and create vars
     def pull_stations(self):
+        """Access the API and create vars"""
         api = bikemi.BikeMiApi()
         get_stations_basic_info = api.json_decoder(self.STATION_INFO)
         stations_extra_info = api.get_stations_extra_info()
@@ -90,30 +83,31 @@ class TelegramBot:
         )
         return stations_full_info
 
-    # Print station's info
     def print_result(self, station_raw):
+        """Display station's info"""
         stationInfo = (
-            emojis.encode(":busstop: Name: ")
+            encode(":busstop: Name: ")
             + station_raw["name"]
             + "\n"
-            + emojis.encode(":round_pushpin: Address: ")
+            + encode(":round_pushpin: Address: ")
             + station_raw["address"]
             + "\n"
-            + emojis.encode(":bike: Bikes: ")
+            + encode(":bike: Bikes: ")
             + station_raw["bike"]
             + "\n"
-            + emojis.encode(":zap: Electric Bikes: ")
+            + encode(":zap: Electric Bikes: ")
             + station_raw["ebike"]
             + "\n"
-            + emojis.encode(":seat: Electric Bikes with Child Seat: ")
+            + encode(":seat: Electric Bikes with Child Seat: ")
             + station_raw["ebike_with_childseat"]
             + "\n"
-            + emojis.encode(":parking: Available docks: ")
+            + encode(":parking: Available docks: ")
             + station_raw["availableDocks"]
         )
         return stationInfo
 
     def callback_query(self, update, context):
+        """Display the Inline Keyboard Buttons when the user taps on the "Main Menu" button"""
         query = update.callback_query
         reply_markup = self.custom_keyboard()
         # CallbackQueries need to be answered, even if no notification to the user is needed
@@ -121,14 +115,12 @@ class TelegramBot:
         if query.data == "main_menu_callback":
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=emojis.encode(
-                    ":arrow_down: Choose a function from the menu below"
-                ),
+                text=encode(":arrow_down: Choose a function from the menu below"),
                 reply_markup=reply_markup,
             )
 
-    # Display Inline Keyboard Button for the Map coordinates and to go back to Main menu
     def inline_keyboard_buttons(self, station_raw):
+        """Display Inline Keyboard Buttons for the Map coordinates and to go back to Main Menu"""
         button_list = []
         # Add the GMaps location button to the button list
         location_link = (
@@ -137,13 +129,13 @@ class TelegramBot:
             + ","
             + str(station_raw["lon"])
         )
-        text = emojis.encode(":round_pushpin: Open in Maps")
+        text = encode(":round_pushpin: Open in Maps")
         button_list.append(InlineKeyboardButton(text=text, url=location_link))
         # Add the main menu button to the button list
         reply_markup = self.custom_keyboard()
         button_list.append(
             InlineKeyboardButton(
-                text=emojis.encode(":gear: Main Menu"),
+                text=encode(":gear: Main Menu"),
                 callback_data="main_menu_callback",
             )
         )
@@ -224,21 +216,19 @@ class TelegramBot:
 
     def read_command(self, update: Update, context: CallbackContext) -> int:
 
-        if update.message.text == "/search" or update.message.text == emojis.encode(
+        if update.message.text == "/search" or update.message.text == encode(
             ":mag_right: Search Station"
         ):
             update.message.reply_text(
-                emojis.encode(
-                    ":mag_right: What station are you searching for? \n \n /cancel"
-                )
+                encode(":mag_right: What station are you searching for? \n \n /cancel")
             )
             context.user_data["command"] = "search"
 
-        if update.message.text == "/nearest" or update.message.text == emojis.encode(
+        if update.message.text == "/nearest" or update.message.text == encode(
             ":walking: Nearest Station"
         ):
             update.message.reply_text(
-                emojis.encode(
+                encode(
                     ":walking: Enter a place to get the nearest station \n \n /cancel"
                 )
             )
@@ -247,7 +237,7 @@ class TelegramBot:
         if update.message.text == "/location":
             reply_markup = self.custom_keyboard()
             update.message.reply_text(
-                emojis.encode(
+                encode(
                     ":round_pushpin: Share your current location to get the nearest station to you \n \n /cancel"
                 ),
                 reply_markup=reply_markup,
@@ -277,7 +267,7 @@ class TelegramBot:
         """Cancels and ends the conversation."""
         reply_markup = self.custom_keyboard()
         update.message.reply_text(
-            emojis.encode(":thumbsup: Canceled!"), reply_markup=reply_markup
+            encode(":thumbsup: Canceled!"), reply_markup=reply_markup
         )
         context.user_data.clear()
         return ConversationHandler.END
@@ -290,6 +280,7 @@ class TelegramBot:
         )
         context.user_data.clear()
         return ConversationHandler.END
+
     # End ConversationHandler functions
 
     def main(self):
@@ -308,12 +299,12 @@ class TelegramBot:
             entry_points=[
                 CommandHandler("search", self.read_command),
                 MessageHandler(
-                    Filters.regex(emojis.encode(":mag_right: Search Station")),
+                    Filters.regex(encode(":mag_right: Search Station")),
                     self.read_command,
                 ),
                 CommandHandler("nearest", self.read_command),
                 MessageHandler(
-                    Filters.regex(emojis.encode(":walking: Nearest Station")),
+                    Filters.regex(encode(":walking: Nearest Station")),
                     self.read_command,
                 ),
                 CommandHandler("location", self.read_command),
@@ -325,8 +316,8 @@ class TelegramBot:
                         | Filters.location)
                         & ~(
                             Filters.command
-                            | Filters.regex(emojis.encode(":mag_right: Search Station"))
-                            | Filters.regex(emojis.encode(":walking: Nearest Station"))
+                            | Filters.regex(encode(":mag_right: Search Station"))
+                            | Filters.regex(encode(":walking: Nearest Station"))
                         ),
                         self.handle_command,
                     )
@@ -336,12 +327,12 @@ class TelegramBot:
                 CommandHandler("cancel", self.cancel_command),
                 CommandHandler("search", self.wrong_input),
                 MessageHandler(
-                    Filters.regex(emojis.encode(":mag_right: Search Station")),
+                    Filters.regex(encode(":mag_right: Search Station")),
                     self.wrong_input,
                 ),
                 CommandHandler("nearest", self.wrong_input),
                 MessageHandler(
-                    Filters.regex(emojis.encode(":walking: Nearest Station")),
+                    Filters.regex(encode(":walking: Nearest Station")),
                     self.wrong_input,
                 ),
                 CommandHandler("location", self.wrong_input),
