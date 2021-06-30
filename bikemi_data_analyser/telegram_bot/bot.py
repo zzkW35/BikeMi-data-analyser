@@ -1,5 +1,5 @@
-from BikeMi_data_analyser.api.bikemi import BikeMiApi
-from BikeMi_data_analyser.telegram_bot.tools import Tools
+from bikemi_data_analyser.api.bikemi import BikeMiApi
+from bikemi_data_analyser.telegram_bot.tools import Tools
 from emojis import encode
 import os
 import logging

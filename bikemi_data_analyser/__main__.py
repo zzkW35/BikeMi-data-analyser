@@ -1,4 +1,4 @@
-from BikeMi_data_analyser.telegram_bot.bot import TelegramBotDebugger
+from bikemi_data_analyser.telegram_bot.bot import TelegramBotDebugger
 
 bot = TelegramBotDebugger()
 
