@@ -194,13 +194,12 @@ class TelegramBotDebugger:
             reply_markup=reply_markup,
         )
 
-    def get_location(self, update, context):
+    def get_location(self, update, context, user_location):
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
         )
         # Store user's latitute and longitude
-        user_location = update.message["location"]
         latitude = float(user_location["latitude"])
         longitude = float(user_location["longitude"])
 
@@ -242,17 +241,33 @@ class TelegramBotDebugger:
                 )
             )
             context.user_data["command"] = "nearest"
+
+        if update.message.text == "/location":
+            reply_markup = self.custom_keyboard()
+            update.message.reply_text(
+                emojis.encode(
+                    ":round_pushpin: Share your current location to get the nearest station to you \n \n /cancel"
+                ),
+                reply_markup=reply_markup,
+            )
+            context.user_data["command"] = "location"
+
         return self.HANDLE_COMMAND
 
     def handle_command(self, update: Update, context: CallbackContext) -> int:
         context.user_data["place"] = update.message.text
         place = context.user_data["place"]
+        context.user_data["location"] = update.message["location"]
+        user_location = context.user_data["location"]
 
         if context.user_data["command"] == "search":
             self.search_station(update, context, place)
 
         if context.user_data["command"] == "nearest":
             self.search_nearest(update, context, place)
+
+        if context.user_data["command"] == "location":
+            self.get_location(update, context, user_location)
 
         return ConversationHandler.END
 
@@ -300,16 +315,17 @@ class TelegramBotDebugger:
                     Filters.regex(emojis.encode(":walking: Nearest Station")),
                     self.read_command,
                 ),
+                CommandHandler("location", self.read_command),
             ],
             states={
                 self.HANDLE_COMMAND: [
                     MessageHandler(
-                        Filters.text
+                        (Filters.text
+                        | Filters.location)
                         & ~(
                             Filters.command
                             | Filters.regex(emojis.encode(":mag_right: Search Station"))
                             | Filters.regex(emojis.encode(":walking: Nearest Station"))
-                            | Filters.location
                         ),
                         self.handle_command,
                     )
@@ -328,15 +344,10 @@ class TelegramBotDebugger:
                     self.wrong_input,
                 ),
                 CommandHandler("location", self.wrong_input),
-                MessageHandler(Filters.location, self.wrong_input),
             ],
         )
 
         self.dispatcher.add_handler(conv_handler)
-
-        # Get Location handler
-        get_location_handler = MessageHandler(Filters.location, self.get_location)
-        self.dispatcher.add_handler(get_location_handler)
 
         # Callback query handler
         main_menu_handler = CallbackQueryHandler(self.callback_query)
