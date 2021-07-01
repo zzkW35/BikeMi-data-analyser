@@ -126,12 +126,13 @@ class TelegramBotDebugger:
             reply_markup=reply_markup,
         )
 
-    def get_location(self, update, context, user_location):
+    def get_location(self, update, context):
         # Typing...
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
         )
         # Store user's latitute and longitude
+        user_location = update.message["location"]
         latitude = float(user_location["latitude"])
         longitude = float(user_location["longitude"])
 
@@ -189,7 +190,6 @@ class TelegramBotDebugger:
         context.user_data["place"] = update.message.text
         place = context.user_data["place"]
         context.user_data["location"] = update.message["location"]
-        user_location = context.user_data["location"]
 
         if context.user_data["command"] == "search":
             self.search_station(update, context, place)
@@ -198,7 +198,7 @@ class TelegramBotDebugger:
             self.search_nearest(update, context, place)
 
         if context.user_data["command"] == "location":
-            self.get_location(update, context, user_location)
+            self.get_location(update, context)
 
         return ConversationHandler.END
 
@@ -279,6 +279,10 @@ class TelegramBotDebugger:
         )
 
         self.dispatcher.add_handler(conv_handler)
+
+        # Get Location handler
+        get_location_handler = MessageHandler(Filters.location, self.get_location)
+        self.dispatcher.add_handler(get_location_handler)
 
         # Callback query handler
         main_menu_handler = CallbackQueryHandler(self.tools.callback_query)
