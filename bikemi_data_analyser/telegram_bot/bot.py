@@ -93,13 +93,19 @@ class TelegramBotDebugger:
         stations_full_info = self.pull_stations()
 
         for station_raw in self.api.find_station(stations_full_info, place):
-            station = self.print_result(station_raw)
-            reply_markup = self.tools.inline_keyboard_buttons(station_raw)
-            # Send Text
-            update.message.reply_text(
-                station,
-                reply_markup=reply_markup,
-            )
+            if station_raw != None:
+                station = self.print_result(station_raw)
+                reply_markup = self.tools.inline_keyboard_buttons(station_raw)
+                # Send Text
+                update.message.reply_text(
+                    station,
+                    reply_markup=reply_markup,
+                )
+            else:
+                update.message.reply_text(encode(
+                    ":x: This BikeMi station doesn't exist, please choose a new command"),
+                    reply_markup=self.tools.custom_keyboard(),
+                )
 
     def search_nearest(self, update, context, place):
         # Typing...
