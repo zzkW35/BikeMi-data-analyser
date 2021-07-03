@@ -1,5 +1,7 @@
 from bikemi_data_analyser.api.bikemi import BikeMiApi
 from bikemi_data_analyser.telegram_bot.tools import Tools
+from bikemi_data_analyser.telegram_bot.blueprints import Blueprints
+
 from emojis import encode
 import os
 import logging
@@ -31,8 +33,9 @@ from threading import Thread
 class TelegramBotDebugger:
     STATION_INFO = "https://gbfs.urbansharing.com/bikemi.com/station_information.json"
 
-    tools = Tools()
     api = BikeMiApi()
+    blueprints = Blueprints()
+    tools = Tools()
 
     # Logging
     logging.basicConfig(
@@ -44,6 +47,7 @@ class TelegramBotDebugger:
     def start(self, update, context):
         reply_markup = self.tools.custom_keyboard()
 
+        update.message.reply_text(self.blueprints.print_command_info)
         update.message.reply_text(
             encode(":arrow_down: Choose a function from the menu below"),
             reply_markup=reply_markup,
@@ -60,30 +64,6 @@ class TelegramBotDebugger:
         )
         return stations_full_info
 
-    def print_result(self, station_raw):
-        """Display station's info"""
-        stationInfo = (
-            encode(":busstop: Name: ")
-            + station_raw["name"]
-            + "\n"
-            + encode(":round_pushpin: Address: ")
-            + station_raw["address"]
-            + "\n"
-            + encode(":bike: Bikes: ")
-            + station_raw["bike"]
-            + "\n"
-            + encode(":zap: Electric Bikes: ")
-            + station_raw["ebike"]
-            + "\n"
-            + encode(":seat: Electric Bikes with Child Seat: ")
-            + station_raw["ebike_with_childseat"]
-            + "\n"
-            + encode(":parking: Available docks: ")
-            + station_raw["availableDocks"]
-        )
-
-        return stationInfo
-
     def search_station(self, update, context, place):
         # Typing...
         context.bot.send_chat_action(
@@ -94,7 +74,7 @@ class TelegramBotDebugger:
 
         for station_raw in self.api.find_station(stations_full_info, place):
             if station_raw != None:
-                station = self.print_result(station_raw)
+                station = self.blueprints.print_result(station_raw)
                 reply_markup = self.tools.inline_keyboard_buttons(station_raw)
                 # Send Text
                 update.message.reply_text(
@@ -124,7 +104,7 @@ class TelegramBotDebugger:
         reply_markup = self.tools.inline_keyboard_buttons(station_raw)
 
         # Text Message
-        station = self.print_result(station_raw)
+        station = self.blueprints.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
         update.message.reply_text(
@@ -149,7 +129,7 @@ class TelegramBotDebugger:
         reply_markup = self.tools.inline_keyboard_buttons(station_raw)
 
         # Generate Text Message
-        station = self.print_result(station_raw)
+        station = self.blueprints.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
         update.message.reply_text(
@@ -257,8 +237,7 @@ class TelegramBotDebugger:
             states={
                 self.HANDLE_COMMAND: [
                     MessageHandler(
-                        (Filters.text
-                        | Filters.location)
+                        (Filters.text | Filters.location)
                         & ~(
                             Filters.command
                             | Filters.regex(encode(":mag_right: Search Station"))
