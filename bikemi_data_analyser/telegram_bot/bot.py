@@ -172,6 +172,14 @@ class TelegramBotDebugger:
             )
             context.user_data["command"] = "location"
 
+        elif update.message.text == "/cancel":
+            reply_markup = self.tools.custom_keyboard()
+            update.message.reply_text(
+                encode(":thumbsup: Canceled!"), reply_markup=reply_markup
+            )
+            context.user_data.clear()
+            return ConversationHandler.END
+
         else:
             update.message.reply_text(
                 encode(
@@ -179,6 +187,7 @@ class TelegramBotDebugger:
                 ),
                 reply_markup=self.tools.custom_keyboard(),
             )
+            context.user_data.clear()
             return ConversationHandler.END
 
         return self.HANDLE_COMMAND
