@@ -259,6 +259,22 @@ class TelegramBot:
         start_handler = CommandHandler("start", self.start)
         self.dispatcher.add_handler(start_handler)
 
+        # Function to stop and restart the bot from the chat
+        def stop_and_restart():
+            """Gracefully stop the Updater and replace the current process with a new one"""
+            updater.stop()
+            os.execl(sys.executable, sys.executable, *sys.argv)
+
+        # Function to stop the bot from the chat
+        def restart(update, context):
+            update.message.reply_text("Bot is restarting...")
+            Thread(target=stop_and_restart).start()
+
+        # Handler to stop the bot
+        self.dispatcher.add_handler(
+            CommandHandler("r", restart, filters=Filters.user(username="@zzkW35"))
+        )
+
         # Build conv handler
         conv_handler = ConversationHandler(
             entry_points=[
@@ -324,22 +340,6 @@ class TelegramBot:
         # Callback query handler
         main_menu_handler = CallbackQueryHandler(self.tools.callback_query)
         self.dispatcher.add_handler(main_menu_handler)
-
-        # Function to stop and restart the bot from the chat
-        def stop_and_restart():
-            """Gracefully stop the Updater and replace the current process with a new one"""
-            updater.stop()
-            os.execl(sys.executable, sys.executable, *sys.argv)
-
-        # Function to stop the bot from the chat
-        def restart(update, context):
-            update.message.reply_text("Bot is restarting...")
-            Thread(target=stop_and_restart).start()
-
-        # Handler to stop the bot
-        self.dispatcher.add_handler(
-            CommandHandler("r", restart, filters=Filters.user(username="@zzkW35"))
-        )
 
         # Start Bot
         updater.start_polling()
