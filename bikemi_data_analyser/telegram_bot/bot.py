@@ -1,21 +1,15 @@
-from bikemi_data_analyser.api.bikemi import BikeMiApi
-from bikemi_data_analyser.telegram_bot.tools import Tools
-from bikemi_data_analyser.telegram_bot.blueprints import Blueprints
+import bikemi_data_analyser.api.bikemi as api
+import bikemi_data_analyser.telegram_bot.tools as tools
+import bikemi_data_analyser.telegram_bot.blueprints as blueprints
 
 from emojis import encode
 import os
 import logging
 import sys
 
-from functools import wraps
 from geopy.geocoders import MapBox
 from telegram import (
     ChatAction,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    KeyboardButton,
-    Location,
-    ReplyKeyboardMarkup,
     Update,
 )
 from telegram.ext import (
@@ -33,10 +27,6 @@ from threading import Thread
 class TelegramBotDebugger:
     STATION_INFO = "https://gbfs.urbansharing.com/bikemi.com/station_information.json"
 
-    api = BikeMiApi()
-    blueprints = Blueprints()
-    tools = Tools()
-
     # Logging
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -44,10 +34,10 @@ class TelegramBotDebugger:
     )
 
     # Start command
-    def start(self, update, context):
-        reply_markup = self.tools.custom_keyboard()
+    def start(self, update):
+        reply_markup = tools.custom_keyboard()
 
-        update.message.reply_text(self.blueprints.print_command_info)
+        update.message.reply_text(blueprints.print_command_info)
         update.message.reply_text(
             encode(":arrow_down: Choose a function from the menu below"),
             reply_markup=reply_markup,
@@ -57,9 +47,9 @@ class TelegramBotDebugger:
 
     def pull_stations(self):
         """Access the API and create vars"""
-        get_stations_basic_info = self.api.json_decoder(self.STATION_INFO)
-        stations_extra_info = self.api.get_stations_extra_info()
-        stations_full_info = self.api.get_stations_full_info(
+        get_stations_basic_info = api.json_decoder(self.STATION_INFO)
+        stations_extra_info = api.get_stations_extra_info()
+        stations_full_info = api.get_stations_full_info(
             get_stations_basic_info, stations_extra_info
         )
         return stations_full_info
@@ -72,10 +62,10 @@ class TelegramBotDebugger:
 
         stations_full_info = self.pull_stations()
 
-        for station_raw in self.api.find_station(stations_full_info, place):
-            if station_raw != None:
-                station = self.blueprints.print_result(station_raw)
-                reply_markup = self.tools.inline_keyboard_buttons(station_raw)
+        for station_raw in api.find_station(stations_full_info, place):
+            if station_raw is not None:
+                station = blueprints.print_result(station_raw)
+                reply_markup = tools.inline_keyboard_buttons(station_raw)
                 # Send Text
                 update.message.reply_text(
                     station,
@@ -86,7 +76,7 @@ class TelegramBotDebugger:
                     encode(
                         ":x: This BikeMi station doesn't exist, please choose a new command"
                     ),
-                    reply_markup=self.tools.custom_keyboard(),
+                    reply_markup=tools.custom_keyboard(),
                 )
 
     def search_nearest(self, update, context, place):
@@ -100,13 +90,13 @@ class TelegramBotDebugger:
         proximity = (45.464228552423435, 9.191557965278111)  # Duomo
         location = geolocator.geocode(place, proximity=proximity)
         stations_full_info = self.pull_stations()
-        station_raw = self.api.get_nearest_station(
+        station_raw = api.get_nearest_station(
             stations_full_info, location.latitude, location.longitude
         )
-        reply_markup = self.tools.inline_keyboard_buttons(station_raw)
+        reply_markup = tools.inline_keyboard_buttons(station_raw)
 
         # Text Message
-        station = self.blueprints.print_result(station_raw)
+        station = blueprints.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
         update.message.reply_text(
@@ -119,19 +109,19 @@ class TelegramBotDebugger:
         context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
         )
-        # Store user's latitute and longitude
+        # Store user's latitude and longitude
         user_location = update.message["location"]
         latitude = float(user_location["latitude"])
         longitude = float(user_location["longitude"])
 
         stations_full_info = self.pull_stations()
-        station_raw = self.api.get_nearest_station(
+        station_raw = api.get_nearest_station(
             stations_full_info, latitude, longitude
         )
-        reply_markup = self.tools.inline_keyboard_buttons(station_raw)
+        reply_markup = tools.inline_keyboard_buttons(station_raw)
 
         # Generate Text Message
-        station = self.blueprints.print_result(station_raw)
+        station = blueprints.print_result(station_raw)
         nearest_station = "The nearest station is: \n" + station
         # Send text
         update.message.reply_text(
@@ -142,7 +132,7 @@ class TelegramBotDebugger:
     # Start ConversationHandler functions
     HANDLE_COMMAND = range(1)
 
-    def read_command(self, update: Update, context: CallbackContext) -> int:
+    def read_command(self, update: Update, context: CallbackContext):
 
         if update.message.text == "/search" or update.message.text == encode(
             ":mag_right: Search Station"
@@ -163,7 +153,7 @@ class TelegramBotDebugger:
             context.user_data["command"] = "nearest"
 
         elif update.message.text == "/location":
-            reply_markup = self.tools.custom_keyboard()
+            reply_markup = tools.custom_keyboard()
             update.message.reply_text(
                 encode(
                     ":round_pushpin: Share your current location to get the nearest station to you \n \n /cancel"
@@ -173,7 +163,7 @@ class TelegramBotDebugger:
             context.user_data["command"] = "location"
 
         elif update.message.text == "/cancel":
-            reply_markup = self.tools.custom_keyboard()
+            reply_markup = tools.custom_keyboard()
             update.message.reply_text(
                 encode(":thumbsup: Canceled!"), reply_markup=reply_markup
             )
@@ -185,14 +175,14 @@ class TelegramBotDebugger:
                 encode(
                     ":exclamation: I don't recognise such command, please select a new one from below"
                 ),
-                reply_markup=self.tools.custom_keyboard(),
+                reply_markup=tools.custom_keyboard(),
             )
             context.user_data.clear()
             return ConversationHandler.END
 
         return self.HANDLE_COMMAND
 
-    def handle_command(self, update: Update, context: CallbackContext) -> int:
+    def handle_command(self, update: Update, context: CallbackContext):
         context.user_data["place"] = update.message.text
         place = context.user_data["place"]
         context.user_data["location"] = update.message["location"]
@@ -208,17 +198,17 @@ class TelegramBotDebugger:
 
         return ConversationHandler.END
 
-    def cancel_command(self, update: Update, context: CallbackContext) -> int:
+    def cancel_command(self, update: Update, context: CallbackContext):
         """Cancels and ends the conversation."""
-        reply_markup = self.tools.custom_keyboard()
+        reply_markup = tools.custom_keyboard()
         update.message.reply_text(
             encode(":thumbsup: Canceled!"), reply_markup=reply_markup
         )
         context.user_data.clear()
         return ConversationHandler.END
 
-    def wrong_input(self, update: Update, context: CallbackContext) -> int:
-        reply_markup = self.tools.custom_keyboard()
+    def wrong_input(self, update: Update, context: CallbackContext):
+        reply_markup = tools.custom_keyboard()
         update.message.reply_text(
             "That isn't the name of a BikeMi station, cancelling...",
             reply_markup=reply_markup,
@@ -302,7 +292,7 @@ class TelegramBotDebugger:
         self.dispatcher.add_handler(get_location_handler)
 
         # Callback query handler
-        main_menu_handler = CallbackQueryHandler(self.tools.callback_query)
+        main_menu_handler = CallbackQueryHandler(tools.callback_query)
         self.dispatcher.add_handler(main_menu_handler)
 
         # Function to stop and restart the bot from the chat
