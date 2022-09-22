@@ -10,11 +10,6 @@ from functools import wraps
 from geopy.geocoders import MapBox
 from telegram import (
     ChatAction,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    KeyboardButton,
-    Location,
-    ReplyKeyboardMarkup,
     Update,
 )
 from telegram.ext import (
