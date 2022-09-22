@@ -6,7 +6,6 @@ import logging
 import sys
 
 from emojis import encode
-from functools import wraps
 from geopy.geocoders import MapBox
 from telegram import (
     ChatAction,
@@ -66,16 +65,16 @@ class TelegramBot:
             + station_raw["address"]
             + "\n"
             + encode(":bike: Bikes: ")
-            + station_raw["bike"]
+            + str(station_raw["bike"])
             + "\n"
             + encode(":zap: Electric Bikes: ")
-            + station_raw["ebike"]
+            + str(station_raw["ebike"])
             + "\n"
             + encode(":seat: Electric Bikes with Child Seat: ")
-            + station_raw["ebike_with_childseat"]
+            + str(station_raw["ebike_with_childseat"])
             + "\n"
             + encode(":parking: Available docks: ")
-            + station_raw["availableDocks"]
+            + str(station_raw["availableDocks"])
         )
         return stationInfo
 
