@@ -4,6 +4,7 @@ from bikemi_data_analyser.telegram_bot.tools import Tools
 import os
 import logging
 import sys
+import json
 
 from emojis import encode
 from geopy.geocoders import MapBox
@@ -48,10 +49,8 @@ class TelegramBot:
 
     def pull_stations(self):
         """Access the API and create vars"""
-        get_stations_basic_info = self.api.json_decoder(self.STATION_INFO)
-        stations_extra_info = self.api.get_stations_extra_info()
-        stations_full_info = self.api.get_stations_full_info(
-            get_stations_basic_info, stations_extra_info
+        stations_full_info = json.loads(
+            self.api.get_station_full_info_json(self.STATION_INFO)
         )
         return stations_full_info
 
@@ -59,7 +58,7 @@ class TelegramBot:
         """Display station's info"""
         stationInfo = (
             encode(":busstop: Name: ")
-            + station_raw["name"]
+            + station_raw["title"]
             + "\n"
             + encode(":round_pushpin: Address: ")
             + station_raw["address"]
